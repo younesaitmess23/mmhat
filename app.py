@@ -30,6 +30,10 @@ def remove_background():
     file = request.files['file']
     if file.filename == '':
         return "لم يتم اختيار ملف!"
+
+    # التأكد من أن الملف هو صورة
+    if not file.filename.lower().endswith(('png', 'jpg', 'jpeg')):
+        return "الملف يجب أن يكون صورة بصيغة PNG أو JPG أو JPEG!"
     
     # حفظ الصورة المدخلة
     input_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
@@ -45,15 +49,25 @@ def remove_background():
         # تحويل البيانات الناتجة إلى صورة PNG باستخدام PIL للتأكد من صيغة الصورة
         output_image = Image.open(io.BytesIO(output_data))
 
+        # تأكد من أن الصورة الناتجة لا تحتوي على اسم مكرر
+        output_filename = 'output_image.png'
+        output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+        
+        # إذا كان الملف موجودًا، تغيير الاسم
+        count = 1
+        while os.path.exists(output_path):
+            output_filename = f'output_image_{count}.png'
+            output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_filename)
+            count += 1
+
         # حفظ الصورة الناتجة
-        output_path = os.path.join(app.config['OUTPUT_FOLDER'], 'output_image.png')
         output_image.save(output_path, 'PNG')
 
         print(f"تم إزالة الخلفية بنجاح")
         print(f"مسار الصورة الناتجة: {output_path}")
 
         # إرسال الصورة الناتجة للمستخدم
-        return send_from_directory(app.config['OUTPUT_FOLDER'], 'output_image.png')
+        return send_from_directory(app.config['OUTPUT_FOLDER'], output_filename)
 
     except Exception as e:
         return f"حدث خطأ أثناء إزالة الخلفية: {e}"
