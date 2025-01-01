@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>موقع ممحاة</title>
-    <link rel="icon" type="image/png" href="static/images/xxx.png">
+    <link rel="icon" type="image/png" href="/mmhat/static/images/xxx.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&family=Lalezar&family=Noto+Kufi+Arabic:wght@100..900&family=Readex+Pro:wght@160..700&display=swap" rel="stylesheet">
@@ -150,7 +150,7 @@
 <body>
 
 <div id="logoContainer">
-    <img src="static/images/xxx.png" alt="Logo" style="width: 50px; height: 50px;">
+    <img src="/mmhat/static/images/xxx.png" alt="Logo" style="width: 50px; height: 50px;">
 </div>
 
 <header>
@@ -163,13 +163,13 @@
     <form action="/remove_background" method="POST" enctype="multipart/form-data">
         <div class="mb-3 text-center">
             <div id="uploadBtn" onclick="document.getElementById('file').click();">
-                <img src="static/images/upload.png" alt="Upload Arrow">
+                <img src="/mmhat/static/images/upload.png" alt="Upload Arrow">
             </div>
             <input type="file" class="form-control" id="file" name="file" required style="display: none;">
         </div>
 
         <button type="submit" class="btn btn-primary" id="removeBtn">
-            <img src="static/images/button.png" alt="Remove Background">
+            <img src="/mmhat/static/images/button.png" alt="Remove Background">
         </button>
     </form>
 </div>
@@ -189,44 +189,44 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const closePopup = document.getElementById('closePopup');
 
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
+form.addEventListener('submit', function(e) {
+    e.preventDefault();
 
-        let formData = new FormData(form);
-        fetch('/remove_background', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.blob())
-        .then(blob => {
-            resultPopup.style.display = 'flex';
+    let formData = new FormData(form);
+    fetch('/remove_background', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        resultPopup.style.display = 'flex';
 
-            let img = document.createElement('img');
-            img.src = URL.createObjectURL(blob);
-            img.style.maxWidth = '500px';
-            img.style.maxHeight = '500px';
-            img.style.width = 'auto';
-            img.style.height = 'auto';
-            img.style.objectFit = 'contain';
+        let img = document.createElement('img');
+        img.src = URL.createObjectURL(blob);
 
-            resultDiv.innerHTML = '';
-            resultDiv.appendChild(img);
+        img.style.maxWidth = '500px';
+        img.style.maxHeight = '500px';
+        img.style.width = 'auto';
+        img.style.height = 'auto';
+        img.style.objectFit = 'contain';
 
-            downloadBtn.onclick = () => {
-                const link = document.createElement('a');
-                link.href = img.src;
-                link.download = 'image.png';
-                link.click();
-            };
-        })
-        .catch(error => alert('حدث خطأ: ' + error));
-    });
+        resultDiv.innerHTML = '';
+        resultDiv.appendChild(img);
 
-    closePopup.addEventListener('click', function() {
-        resultPopup.style.display = 'none';
-    });
+        downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = img.src;
+            a.download = 'result.png';
+            a.click();
+        };
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+closePopup.addEventListener('click', () => {
+    resultPopup.style.display = 'none';
+});
 </script>
 
 </body>
 </html>
-
