@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>موقع ممحاة</title>
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/xxx.png') }}">
+    <link rel="icon" type="image/png" href="static/images/xxx.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Sans+Arabic:wght@100;200;300;400;500;600;700&family=Lalezar&family=Noto+Kufi+Arabic:wght@100..900&family=Readex+Pro:wght@160..700&display=swap" rel="stylesheet">
@@ -98,35 +98,34 @@
         }
 
         #resultPopupContent img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* تأكد من ملء الصورة للمربع بشكل مناسب */
-    border: 5px solid red; /* حدود للصورة */
-    border-radius: 10px;
-}
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 5px solid red;
+            border-radius: 10px;
+        }
 
-#resultPopupContent {
-    background: rgba(128, 128, 128, 0.9);
-    padding: 20px;
-    border-radius: 10px;
-    text-align: center;
-    width: 80vw; /* تغيير العرض ليناسب نسبة العرض للموقع */
-    height: 80vh; /* تغيير الارتفاع ليكون متناسب مع العرض */
-}
+        #resultPopupContent {
+            background: rgba(128, 128, 128, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            width: 80vw;
+            height: 80vh;
+        }
 
-#resultPopup {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.7);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
+        #resultPopup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
 
         #downloadBtn, #closePopup {
             margin-top: 15px;
@@ -151,7 +150,7 @@
 <body>
 
 <div id="logoContainer">
-    <img src="{{ url_for('static', filename='images/xxx.png') }}" alt="Logo" style="width: 50px; height: 50px;">
+    <img src="static/images/xxx.png" alt="Logo" style="width: 50px; height: 50px;">
 </div>
 
 <header>
@@ -164,13 +163,13 @@
     <form action="/remove_background" method="POST" enctype="multipart/form-data">
         <div class="mb-3 text-center">
             <div id="uploadBtn" onclick="document.getElementById('file').click();">
-                <img src="{{ url_for('static', filename='images/upload.png') }}" alt="Upload Arrow">
+                <img src="static/images/upload.png" alt="Upload Arrow">
             </div>
             <input type="file" class="form-control" id="file" name="file" required style="display: none;">
         </div>
 
         <button type="submit" class="btn btn-primary" id="removeBtn">
-            <img src="{{ url_for('static', filename='images/button.png') }}" alt="Remove Background">
+            <img src="static/images/button.png" alt="Remove Background">
         </button>
     </form>
 </div>
@@ -190,48 +189,44 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const closePopup = document.getElementById('closePopup');
 
-form.addEventListener('submit', function(e) {
-    e.preventDefault();
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
 
-    let formData = new FormData(form);
-    fetch('/remove_background', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.blob())  // عندما يتم تحميل الصورة
-    .then(blob => {
-        resultPopup.style.display = 'flex'; // إظهار نافذة النتيجة
+        let formData = new FormData(form);
+        fetch('/remove_background', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            resultPopup.style.display = 'flex';
 
-        let img = document.createElement('img');
-        img.src = URL.createObjectURL(blob);  // تحويل الصورة إلى رابط
+            let img = document.createElement('img');
+            img.src = URL.createObjectURL(blob);
+            img.style.maxWidth = '500px';
+            img.style.maxHeight = '500px';
+            img.style.width = 'auto';
+            img.style.height = 'auto';
+            img.style.objectFit = 'contain';
 
-        // تحديد حجم الصورة بحيث يتم تقليصها لتناسب المربع بشكل أفضل
-        img.style.maxWidth = '500px';  // أقصى عرض للصورة 500px
-        img.style.maxHeight = '500px'; // أقصى ارتفاع للصورة 500px
-        img.style.width = 'auto';      // الحفاظ على الأبعاد الأصلية
-        img.style.height = 'auto';     // الحفاظ على الأبعاد الأصلية
-        img.style.objectFit = 'contain';  // لضبط الصورة داخل المربع مع الحفاظ على الأبعاد
+            resultDiv.innerHTML = '';
+            resultDiv.appendChild(img);
 
-        resultDiv.innerHTML = '';  // امسح المحتوى القديم
-        resultDiv.appendChild(img);  // أضف الصورة الجديدة
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.href = img.src;
+                link.download = 'image.png';
+                link.click();
+            };
+        })
+        .catch(error => alert('حدث خطأ: ' + error));
+    });
 
-        // رابط لتحميل الصورة
-        downloadBtn.onclick = () => {
-            const a = document.createElement('a');
-            a.href = img.src;
-            a.download = 'result.png';
-            a.click();
-        };
-    })
-    .catch(error => console.error('Error:', error));  // التعامل مع الأخطاء
-});
-
-
-
-    closePopup.addEventListener('click', () => {
+    closePopup.addEventListener('click', function() {
         resultPopup.style.display = 'none';
     });
 </script>
 
 </body>
 </html>
+
