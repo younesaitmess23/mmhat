@@ -7,9 +7,11 @@ import io
 # إعداد التطبيق
 app = Flask(__name__)
 
-# مسار لحفظ الصور
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'output'
+# مسار لحفظ الصور في بيئة الاستضافة (مثل Render)
+UPLOAD_FOLDER = '/tmp/uploads'
+OUTPUT_FOLDER = '/tmp/output'
+
+# تعيين مجلدات الحفظ في التطبيق
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
