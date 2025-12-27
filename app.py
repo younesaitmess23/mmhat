@@ -1,65 +1,74 @@
-from flask import Flask, render_template, request, send_from_directory
-from rembg import remove
+from flask import Flask, after_this_request, render_template, request, send_file
 import os
-from PIL import Image
-import io
+import re
+import uuid
+import yt_dlp
 
-# إعداد التطبيق
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "change-me")
 
-# مسار لحفظ الصور في بيئة الاستضافة (مثل Render)
-UPLOAD_FOLDER = '/tmp/uploads'
-OUTPUT_FOLDER = '/tmp/output'
+DOWNLOAD_FOLDER = "/tmp/youtube_downloads"
+os.makedirs(DOWNLOAD_FOLDER, exist_ok=True)
 
-# تعيين مجلدات الحفظ في التطبيق
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 
-# تأكد من وجود المجلدات
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+def _safe_filename(name: str) -> str:
+    cleaned = re.sub(r"[^\w\s.-]", "", name, flags=re.UNICODE).strip()
+    return cleaned or "video"
 
-# الصفحة الرئيسية
-@app.route('/')
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-# وظيفة رفع الصورة وإزالة الخلفية
-@app.route('/remove_background', methods=['POST'])
-def remove_background():
-    if 'file' not in request.files:
-        return "لم يتم اختيار ملف!"
-    file = request.files['file']
-    if file.filename == '':
-        return "لم يتم اختيار ملف!"
-    
-    # حفظ الصورة المدخلة
-    input_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-    file.save(input_path)
-    print(f"تم رفع الصورة: {file.filename}")
 
-    # إزالة الخلفية
+@app.route("/download", methods=["POST"])
+def download():
+    url = request.form.get("url", "").strip()
+    if not url:
+        return render_template("index.html", error="يرجى إدخال رابط فيديو صحيح.")
+
+    download_id = uuid.uuid4().hex
+    output_template = os.path.join(DOWNLOAD_FOLDER, f"{download_id}.%(ext)s")
+
+    ydl_opts = {
+        "format": "bestvideo+bestaudio/best",
+        "outtmpl": output_template,
+        "merge_output_format": "mp4",
+        "noplaylist": True,
+        "quiet": True,
+        "no_warnings": True,
+    }
+
     try:
-        with open(input_path, 'rb') as input_file:
-            input_data = input_file.read()
-            output_data = remove(input_data)
-        
-        # تحويل البيانات الناتجة إلى صورة PNG باستخدام PIL للتأكد من صيغة الصورة
-        output_image = Image.open(io.BytesIO(output_data))
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            title = info.get("title", "video")
+            ext = info.get("ext", "mp4")
+    except Exception as exc:
+        return render_template(
+            "index.html",
+            error=f"تعذر تحميل الفيديو. تأكد من الرابط وحاول مرة أخرى. ({exc})",
+        )
 
-        # حفظ الصورة الناتجة
-        output_path = os.path.join(app.config['OUTPUT_FOLDER'], 'output_image.png')
-        output_image.save(output_path, 'PNG')
+    filename = f"{_safe_filename(title)}.{ext}"
+    downloaded_path = os.path.join(DOWNLOAD_FOLDER, f"{download_id}.{ext}")
 
-        print(f"تم إزالة الخلفية بنجاح")
-        print(f"مسار الصورة الناتجة: {output_path}")
+    if not os.path.exists(downloaded_path):
+        return render_template(
+            "index.html",
+            error="تم التحميل ولكن لم يتم العثور على الملف. حاول مرة أخرى.",
+        )
 
-        # إرسال الصورة الناتجة للمستخدم
-        return send_from_directory(app.config['OUTPUT_FOLDER'], 'output_image.png')
+    @after_this_request
+    def cleanup(response):
+        try:
+            os.remove(downloaded_path)
+        except OSError:
+            pass
+        return response
 
-    except Exception as e:
-        return f"حدث خطأ أثناء إزالة الخلفية: {e}"
+    return send_file(downloaded_path, as_attachment=True, download_name=filename)
 
-# تشغيل التطبيق على الشبكة المحلية
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
